@@ -1,0 +1,100 @@
+1.
+select cause as Parties,count(*) as Tweet_Count from
+(select regexp_extract(text,'bjp|Indian National congress|congress|aap|bjd|tdp|tmc|Samajwadi Party|Bahujan Samaj Party|NDA|UPA',0)as cause from table) where nullif(cause,"") is not null  group by Parties order by Tweet_Count desc
+
+2.
+select cause as Leaders,count(*) as Tweet_Count from
+(select regexp_extract (text,'Narendra Modi | Rahul Gandhi',0)as cause from table) where nullif(cause,"") is not null  group by Leaders order by Tweet_Count desc
+
+3.select cause1,count(*) from 
+(select regexp_extract(text,'bjp|Indian National congress|INC|aap|bjd|tdp|tmc|Samajwadi Party|Bahujan Samaj Party
+|Narendra Modi|Rahul Gandhi|Arvind kejriwal|Naveen Pattnaik|Akhilesh Yadav|Chandrababu Naidu|ElectionsIndia
+|IndianElections|LoksabhaElections2019|PMo|Namo|RaGa|Loksabha|Rajyasabha|Varanasi|Amethi|NDA|UPA|chowkidar
+|Mamata Banerjee',0) as cause1 from table) group by cause1
+
+4.
+select lang,count(*) as cnt from table group by lang order by cnt desc limit 10
+
+5.
+select user.name,user.followers_count from table order by user.followers_count desc limit 10
+
+6.
+select substring(user.created_at,length(user.created_at)-3,4) year,count(*) as cnt from table 
+group by substring(user.created_at,length(user.created_at)-3,4) order by cnt limit 10
+
+7.
+select name,TweetCount from(select user.id,user.name as name,count(*) TweetCount from table
+ group by user.id,user.name,user) order by TweetCount DESC LIMIT 20
+
+8.
+select regexp_replace(text,'\\n','') text,count(*) as cnt from
+(select text from table where 
+text like '%pulwama%' 
+or text like '%gst%' 
+or text like '%rafale%' 
+or text like '%demonatization%' 
+or text like '%acche din%' 
+or text like '%chowkidar%'
+or text like '%vote%') 
+group by text order by cnt desc limit 20
+
+9.
+select place as place,count(*) as c from table group by place order by c desc  limit 10
+
+10.
+select regexp_replace(text,'\\n','') text,count(*) as cnt from
+(select text from table where 
+text like '%pulwama%' 
+or text like '%gst%' 
+or text like '%rafale%' 
+or text like '%demonatization%' 
+or text like '%acche din%' 
+or text like '%chowkidar%'
+or text like '%vote%') 
+group by text order by cnt desc limit 20
+
+select concat(coalesce(nullif(cause),""),"Related Tweets")," - ",related) as cause&RelatedTweets,count(*) as cnt from
+(select regexp_extract (text,'pulwama|gst|rafale|demonatization|acche din|chowkidar|vote',0)as cause,related from table
+where related like '%pulwama%' 
+      or related like '%gst%' 
+      or related like '%rafale%'
+      or related like '%demonatization%' 
+      or related like '%acche din%' 
+      or related like '%chowkidar%'
+      or related like '%vote%'
+      and nullif(cause,"") is not null ) 
+      group by cause
+      order by cnt desc
+
+SELECT id,text, created_at  FROM table WHERE 1=1 AND (upper(text) LIKE '%MODI%' OR text LIKE '%modi%')
+
+%spark
+def sentiment(s:String) : String = {
+    val positive = Array("praise","development","good","awesome","our")
+    val negative = Array("bjpfails", "chowkidarchorhai", "scam","bad","worst","loss","worstpm","terrible","corruption")
+
+    var st = 0;
+
+    val words = s.split(" ")    
+    positive.foreach(p =>
+        words.foreach(w =>
+            if(p==w) st = st+1
+        )
+    )
+
+    negative.foreach(p=>
+        words.foreach(w=>
+            if(p==w) st = st-1
+        )
+    )
+    if(st>0)
+        "positivie"
+    else if(st<0)
+        "negative"
+    else
+        "neutral"
+}
+
+spark.udf.register("sentiment", sentiment _)
+
+select sentiment(text), count(*) from table where text like '%modi%' or text like '%Narendra Modi%' or text like '%bjp%' group by sentiment(text)
